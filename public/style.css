@@ -1,0 +1,121 @@
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Tahoma, Arial, sans-serif;
+  background: #0e1621;
+  color: #ffffff;
+  min-height: 100vh;
+}
+
+.topbar {
+  background: #17212b;
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #263746;
+}
+
+.topbar h1 {
+  color: #64b5f6;
+  font-size: 23px;
+}
+
+button {
+  background: #3390ec;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 18px;
+  font-size: 15px;
+  cursor: pointer;
+  margin: 5px;
+}
+
+button:hover {
+  background: #2678c8;
+}
+
+.container {
+  width: 100%;
+  max-width: 700px;
+  margin: 25px auto;
+  padding: 15px;
+}
+
+.welcome {
+  text-align: center;
+  padding: 35px 15px;
+}
+
+.welcome h2 {
+  font-size: 25px;
+  margin-bottom: 12px;
+}
+
+.welcome p {
+  color: #a9b8c6;
+}
+
+.login-box,
+.rooms {
+  background: #17212b;
+  padding: 22px;
+  border-radius: 15px;
+  margin: 20px 0;
+  border: 1px solid #263746;
+}
+
+.login-box h2,
+.rooms h2 {
+  margin-bottom: 18px;
+}
+
+input {
+  width: 100%;
+  padding: 14px;
+  margin: 8px 0;
+  border-radius: 10px;
+  border: 1px solid #405367;
+  background: #0e1621;
+  color: white;
+  font-size: 16px;
+  outline: none;
+}
+
+input:focus {
+  border-color: #3390ec;
+}
+
+.login-box button {
+  width: 100%;
+  margin: 8px 0;
+}
+
+#guestBtn {
+  background: #263746;
+}
+
+#roomList {
+  color: #a9b8c6;
+  padding: 12px 0;
+}
+
+@media (max-width: 600px) {
+  .container {
+    padding: 12px;
+  }
+
+  .welcome h2 {
+    font-size: 21px;
+  }
+
+  .topbar h1 {
+    font-size: 19px;
+  }
+}
