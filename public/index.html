@@ -1,0 +1,47 @@
+
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#111827">
+  <title>VoiceRoom | ویس‌روم</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div id="app">
+    <header class="topbar">
+      <h1>🎙️ VoiceRoom</h1>
+      <button id="languageBtn">فارسی / English</button>
+    </header>
+
+    <main class="container">
+      <section class="welcome">
+        <h2>به VoiceRoom خوش آمدید</h2>
+        <p>اینجا صدای شما شنیده می‌شود!</p>
+      </section>
+
+      <section class="login-box">
+        <h2>ورود به حساب</h2>
+        <input id="username" type="text"
+          placeholder="نام کاربری">
+        <input id="password" type="password"
+          placeholder="رمز عبور">
+
+        <button id="loginBtn">ورود</button>
+        <button id="guestBtn">ورود به عنوان مهمان</button>
+      </section>
+
+      <section class="rooms">
+        <h2>اتاق‌های گفت‌وگو</h2>
+        <div id="roomList">
+          <p>برای مشاهده اتاق‌ها وارد شوید.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
