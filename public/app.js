@@ -1,12 +1,11 @@
 
-const app = document.getElementById("app");
 const usernameInput = document.getElementById("username");
 const passwordInput = document.getElementById("password");
 const loginBtn = document.getElementById("loginBtn");
+const registerBtn = document.getElementById("registerBtn");
 const guestBtn = document.getElementById("guestBtn");
 const roomList = document.getElementById("roomList");
 const languageBtn = document.getElementById("languageBtn");
-const registerBtn = document.getElementById("registerBtn");
 
 let currentUser = null;
 let socket = null;
@@ -21,17 +20,21 @@ async function api(url, data) {
   });
 
   const result = await response.json();
-  if (!response.ok) throw new Error(result.error || "خطایی رخ داد.");
+
+  if (!response.ok) {
+    throw new Error(result.error || "خطایی رخ داد.");
+  }
+
   return result;
 }
 
-function message(text) {
+function showMessage(text) {
   alert(text);
 }
 
-function setLoggedIn(user) {
+function startApp(user) {
   currentUser = user;
-  message("خوش آمدی " + (user.displayName || user.username || "مهمان"));
+  showMessage("خوش آمدی " + (user.displayName || "مهمان"));
   connectSocket();
 }
 
@@ -40,14 +43,18 @@ async function login() {
   const password = passwordInput.value;
 
   if (!username || !password) {
-    return message("نام کاربری و رمز عبور را وارد کن.");
+    return showMessage("نام کاربری و رمز عبور را وارد کن.");
   }
 
   try {
-    const result = await api("/api/login", { username, password });
-    setLoggedIn(result.user);
+    const result = await api("/api/login", {
+      username,
+      password
+    });
+
+    startApp(result.user);
   } catch (error) {
-    message(error.message);
+    showMessage(error.message);
   }
 }
 
@@ -56,11 +63,11 @@ async function register() {
   const password = passwordInput.value;
 
   if (!username || !password) {
-    return message("نام کاربری و رمز عبور را وارد کن.");
+    return showMessage("نام کاربری و رمز عبور را وارد کن.");
   }
 
   if (password.length < 8) {
-    return message("رمز عبور باید حداقل ۸ کاراکتر باشد.");
+    return showMessage("رمز عبور باید حداقل ۸ کاراکتر باشد.");
   }
 
   const displayName = prompt("نام نمایشی خود را وارد کن:") || username;
@@ -72,14 +79,14 @@ async function register() {
       displayName
     });
 
-    setLoggedIn(result.user);
+    startApp(result.user);
   } catch (error) {
-    message(error.message);
+    showMessage(error.message);
   }
 }
 
 function enterAsGuest() {
-  setLoggedIn({
+  startApp({
     username: null,
     displayName: "مهمان"
   });
@@ -90,7 +97,7 @@ function connectSocket() {
     socket.disconnect();
   }
 
-  function startSocket() {
+  function initialize() {
     socket = io();
 
     socket.on("connect", () => {
@@ -98,34 +105,31 @@ function connectSocket() {
     });
 
     socket.on("connect_error", () => {
-      message("اتصال به سرور برقرار نشد. دوباره تلاش کن.");
+      showMessage("اتصال به سرور برقرار نشد.");
     });
 
     socket.on("rooms:list", renderRooms);
-
-    socket.on("peer:joined", participant => {
-      if (currentRoom) {
-        message(participant.name + " وارد اتاق شد.");
-      }
-    });
-
-    socket.on("peer:left", () => {
-      if (currentRoom) socket.emit("rooms:list");
-    });
   }
 
   if (typeof io === "function") {
-    startSocket();
+    initialize();
   } else {
     const script = document.createElement("script");
     script.src = "/socket.io/socket.io.js";
-    script.onload = startSocket;
-    script.onerror = () => message("بارگذاری ارتباط با سرور ناموفق بود.");
+
+    script.onload = initialize;
+
+    script.onerror = () => {
+      showMessage("ارتباط با سرور برقرار نشد.");
+    };
+
     document.head.appendChild(script);
   }
 }
 
 function renderRooms(rooms) {
+  if (currentRoom) return;
+
   roomList.replaceChildren();
 
   if (!rooms.length) {
@@ -137,6 +141,7 @@ function renderRooms(rooms) {
 
   rooms.forEach(room => {
     const item = document.createElement("div");
+
     item.style.padding = "15px";
     item.style.margin = "10px 0";
     item.style.background = "#263746";
@@ -152,6 +157,7 @@ function renderRooms(rooms) {
 
     const button = document.createElement("button");
     button.textContent = "ورود به اتاق";
+
     button.addEventListener("click", () => joinRoom(room));
 
     item.append(title, details, button);
@@ -161,43 +167,57 @@ function renderRooms(rooms) {
 
 function joinRoom(room) {
   if (!socket || !socket.connected) {
-    return message("اتصال به سرور برقرار نیست.");
+    return showMessage("اتصال به سرور برقرار نیست.");
   }
 
-  const password = room.locked
-    ? prompt("رمز اتاق را وارد کن:")
-    : "";
+  if (currentRoom) {
+    return showMessage("ابتدا از اتاق فعلی خارج شو.");
+  }
 
-  if (password === null) return;
+  let password = "";
+
+  if (room.locked) {
+    password = prompt("رمز اتاق را وارد کن:");
+
+    if (password === null) return;
+  }
 
   socket.emit("room:join", {
     id: room.id,
     password,
     name: currentUser.displayName
   }, result => {
-    if (!result.ok) return message(result.error);
+    if (!result.ok) {
+      return showMessage(result.error);
+    }
 
     currentRoom = result.room;
-    roomList.replaceChildren();
-
-    const heading = document.createElement("h3");
-    heading.textContent = "🎙️ " + result.room.title;
-
-    const info = document.createElement("p");
-    info.textContent = "اعضای حاضر: " + result.participants.length;
-
-    const members = document.createElement("p");
-    members.textContent = result.participants
-      .map(person => person.name)
-      .join("، ");
-
-    const leaveButton = document.createElement("button");
-    leaveButton.textContent = "خروج از اتاق";
-    leaveButton.addEventListener("click", leaveRoom);
-
-    roomList.append(heading, info, members, leaveButton);
-    message("وارد اتاق شدی. ارتباط صوتی در مرحله بعد اضافه می‌شود.");
+    showRoom(result.participants);
   });
+}
+
+function showRoom(participants) {
+  roomList.replaceChildren();
+
+  const title = document.createElement("h3");
+  title.textContent = "🎙️ " + currentRoom.title;
+
+  const count = document.createElement("p");
+  count.textContent = "اعضای اتاق: " + participants.length + "/16";
+
+  const members = document.createElement("div");
+
+  participants.forEach(person => {
+    const p = document.createElement("p");
+    p.textContent = "👤 " + person.name;
+    members.appendChild(p);
+  });
+
+  const leaveButton = document.createElement("button");
+  leaveButton.textContent = "خروج از اتاق";
+  leaveButton.addEventListener("click", leaveRoom);
+
+  roomList.append(title, count, members, leaveButton);
 }
 
 function leaveRoom() {
@@ -208,37 +228,47 @@ function leaveRoom() {
   socket.emit("rooms:list");
 }
 
-function addCreateRoomButton() {
-  const roomsSection = document.querySelector(".rooms");
-  if (!roomsSection || document.getElementById("createRoomBtn")) return;
+function createRoomButton() {
+  const section = document.querySelector(".rooms");
+
+  if (!section || document.getElementById("createRoomBtn")) return;
 
   const button = document.createElement("button");
   button.id = "createRoomBtn";
   button.textContent = "ساخت اتاق جدید";
+
   button.addEventListener("click", createRoom);
 
-  roomsSection.insertBefore(button, roomList);
+  section.insertBefore(button, roomList);
 }
 
 function createRoom() {
   if (!socket || !socket.connected) {
-    return message("اتصال به سرور برقرار نیست.");
+    return showMessage("ابتدا به سرور وصل شو.");
+  }
+
+  if (currentRoom) {
+    return showMessage("ابتدا از اتاق فعلی خارج شو.");
   }
 
   const title = prompt("نام اتاق را وارد کن:");
+
   if (!title || !title.trim()) return;
 
-  const password = prompt("برای اتاق رمز بگذار؟ (بدون رمز = عمومی)");
+  const password = prompt(
+    "برای اتاق رمز بگذار. برای اتاق عمومی خالی بگذار:"
+  );
+
   if (password === null) return;
 
   socket.emit("room:create", {
     title: title.trim(),
-    password: password
+    password
   }, result => {
-    if (!result.ok) return message("ساخت اتاق ناموفق بود.");
-
-    socket.emit("rooms:list");
-    message("اتاق ساخته شد.");
+    if (result.ok) {
+      showMessage("اتاق با موفقیت ساخته شد.");
+      socket.emit("rooms:list");
+    }
   });
 }
 
@@ -247,14 +277,14 @@ async function checkSession() {
     const response = await fetch("/api/me", {
       credentials: "same-origin"
     });
+
     const result = await response.json();
 
     if (result.user) {
-      currentUser = result.user;
-      connectSocket();
+      startApp(result.user);
     }
   } catch (error) {
-    console.error("Session check failed:", error);
+    console.error("Session error:", error);
   }
 }
 
@@ -273,8 +303,7 @@ languageBtn.addEventListener("click", () => {
     : "فارسی / English";
 });
 
-addCreateRoomButton();
+createRoomButton();
 checkSession();
 
 console.log("VoiceRoom initialized successfully!");
-
